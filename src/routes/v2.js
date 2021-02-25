@@ -3,7 +3,8 @@
 const fs = require('fs');
 const express = require('express');
 const Collection = require('../models/data-collection.js');
-
+const bearerAuth = require('../auth/middleware/bearer.js');
+const permissions = require('../auth/middleware/acl.js');
 const router = express.Router();
 
 const models = new Map();
@@ -29,9 +30,10 @@ router.param('model', (req, res, next) => {
 
 router.get('/:model', handleGetAll);
 router.get('/:model/:id', handleGetOne);
-router.post('/:model', handleCreate);
-router.put('/:model/:id', handleUpdate);
-router.delete('/:model/:id', handleDelete);
+router.post('/:model', bearerAuth, permissions('create'), handleCreate);
+router.put('/:model/:id', bearerAuth, permissions('update'), handleUpdate);
+router.patch('/:model/:id', bearerAuth, permissions('update'), handleUpdate);
+router.delete('/:model/:id', bearerAuth, permissions('delete'), handleDelete);
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
