@@ -26,7 +26,7 @@ app.use(authRoutes);
 app.use('/api/v1', v1Routes);
 app.use('/api/v2', v2Routes);
 
-app.use(notFound);
+app.use('*', notFound);
 app.use(errorHandlerAuth);
 
 module.exports = {
