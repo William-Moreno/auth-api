@@ -34,7 +34,7 @@ SECRET=c0d1n615fun
 
 Work was accomplished on the `dev` branch. The pull request to merge the code into the `main` branch is here:
 
-- [Pull Request](https://github.com/William-Moreno/bearer-auth/pull/1)
+- [Pull Request](https://github.com/William-Moreno/auth-api/pull/1)
 
 Working features implemented:
 - API and Authentication servers combined into one complete server
