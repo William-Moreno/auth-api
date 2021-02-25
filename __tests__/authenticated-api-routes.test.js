@@ -1,64 +1,71 @@
 'use strict';
 
 process.env.SECRET = 'toes';
+
 const server = require('../src/server.js').server;
 const supergoose = require('@code-fellows/supergoose');
-const middleware = require('../../../src/auth/middleware/bearer.js');
-const Users = require('../../../src/auth/models/users.js');
-const jwt = require('jsonwebtoken');
+const bearer = require('../src/auth/middleware/bearer.js');
+
+const mockRequest = supergoose(server);
 
 let users = {
-  admin: { username: 'admin', password: 'password' },
+  admin: { username: 'admin', password: 'password', role: 'admin' },
+  editor: { username: 'editor', password: 'password', role: 'editor' },
+  user: { username: 'user', password: 'password' },
 };
 
-// Pre-load our database with fake users
-beforeAll(async (done) => {
-  await new Users(users.admin).save();
-  done();
-});
+describe('Testing Auth Router', () => {
 
-describe('Auth Middleware', () => {
+  Object.keys(users).forEach(userType => {
 
-  // Mock the express req/res/next that we need for each middleware call
-  const req = {};
-  const res = {
-    status: jest.fn(() => res),
-    send: jest.fn(() => res),
-  };
-  const next = jest.fn();
+    describe(`${userType} users`, () => {
 
-  describe('user authentication', () => {
+      it('can create one', async () => {
 
-    it('fails a login for a user (admin) with an incorrect token', () => {
+        const response = await mockRequest.post('/signup').send(users[userType]);
+        const userObject = response.body;
 
-      req.headers = {
-        authorization: 'Bearer thisisabadtoken',
-      };
+        expect(response.status).toBe(201);
+        expect(userObject.token).toBeDefined();
+        expect(userObject.user._id).toBeDefined();
+        expect(userObject.user.username).toEqual(users[userType].username);
 
-      return middleware(req, res, next)
-        .then(() => {
-          expect(next).not.toHaveBeenCalled();
-          expect(res.status).toHaveBeenCalledWith(403);
-        });
+      });
 
-    });
+      it('can signin with basic', async () => {
 
-    it('logs in a user with a proper token', () => {
+        const response = await mockRequest.post('/signin')
+          .auth(users[userType].username, users[userType].password);
 
-      const user = { username: 'admin' };
-      const token = jwt.sign(user, process.env.SECRET);
+        const userObject = response.body;
+        expect(response.status).toBe(200);
+        expect(userObject.token).toBeDefined();
+        expect(userObject.user._id).toBeDefined();
+        expect(userObject.user.username).toEqual(users[userType].username);
 
-      req.headers = {
-        authorization: `Bearer ${token}`,
-      };
-
-      return middleware(req, res, next)
-        .then(() => {
-          expect(next).toHaveBeenCalledWith();
-        });
+      });
 
     });
 
   });
 
 });
+
+// describe('Testing Authenticated v2 API Routes', () => {
+//   it('Allow a bearer with \'create\' permissions to add an item to the DB on /api/v2/POST', async () => {
+//     const response = await mockRequest.post('/signup').send(users.editor);
+//     const userObject = response.body;
+//     const userToken = userObject.token;
+//     console.log(userObject);
+
+//     const postResponse = await mockRequest.post('/api/v2/food/').send({
+//       name: 'Pizza',
+//       calories: 380,
+//       type: 'VEGETABLE',
+//     }).set({'Authorization': `Bearer ${userToken}`});
+
+//     expect(postResponse.status).toEqual(201);
+//     expect(postResponse.body._id).toBeTruthy();
+//     expect(postResponse.body.name).toEqual('Pizza');
+//   });
+// });
